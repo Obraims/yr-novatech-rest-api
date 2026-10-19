@@ -142,7 +142,17 @@ The server will boot on `http://localhost:5000`. Navigate to `http://localhost:5
 
 ---
 
-## 🧪 6. Sample cURL Commands
+## ☁️ 6. Vercel Serverless Deployment
+
+This project is configured to run serverlessly on **Vercel** with zero configuration required:
+- **`vercel.json`**: Directs all incoming traffic (`/(.*)`) to `server.js` using `@vercel/node`.
+- **Serverless SQLite in `/tmp`**: Automatically detects `process.env.VERCEL` and stores/seeds `database.sqlite` inside the writable `/tmp` partition.
+- **CDN-Powered Swagger UI**: Delivers Swagger CSS & JS bundles from Cloudflare CDN so `/api-docs` renders with full styling and interactivity on serverless lambdas.
+- **Export Pattern**: Exports `module.exports = app` and uses `if (require.main === module)` to prevent hanging server listeners on serverless platforms.
+
+---
+
+## 🧪 7. Sample cURL Commands
 
 ### Create a New Transaction
 ```bash

@@ -23,12 +23,35 @@ app.use((req, res, next) => {
   next();
 });
 
-// Swagger Interactive API Documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
-  customSiteTitle: 'YR NOVATECH REST API Documentation',
-  customCss: '.swagger-ui .topbar { display: none }',
-  swaggerOptions: { docExpansion: 'list' }
-}));
+// Middleware to ensure SQLite database & seeds are fully initialized before requests (critical for serverless cold-starts)
+app.use(async (req, res, next) => {
+  try {
+    if (db.initPromise) {
+      await db.initPromise;
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Swagger UI CDN Configuration (ensures CSS/JS render flawlessly on serverless Vercel)
+const SWAGGER_UI_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0';
+
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerDocument, {
+    customSiteTitle: 'YR NOVATECH REST API Documentation',
+    customCss: '.swagger-ui .topbar { display: none }',
+    customCssUrl: `${SWAGGER_UI_CDN}/swagger-ui.min.css`,
+    customJs: [
+      `${SWAGGER_UI_CDN}/swagger-ui-bundle.min.js`,
+      `${SWAGGER_UI_CDN}/swagger-ui-standalone-preset.min.js`
+    ],
+    swaggerOptions: { docExpansion: 'list' }
+  })
+);
 
 // Validation Error Formatter Middleware
 const handleValidationErrors = (req, res, next) => {
@@ -55,6 +78,7 @@ app.get('/', (req, res) => {
     success: true,
     message: 'Welcome to the Financial Transaction & Expense Tracker REST API',
     version: '1.0.0',
+    platform: process.env.VERCEL ? 'Vercel Serverless' : 'Node.js Express',
     documentation: '/api-docs',
     timestamp: new Date().toISOString(),
     endpoints: {
@@ -341,9 +365,9 @@ app.use((err, req, res, next) => {
 });
 
 // ==========================================
-// Server Start
+// Server Start (Only when executed directly)
 // ==========================================
-if (process.env.NODE_ENV !== 'test') {
+if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`=======================================================`);
     console.log(`🚀 Financial Transaction REST API is live!`);
@@ -353,4 +377,5 @@ if (process.env.NODE_ENV !== 'test') {
   });
 }
 
+// Export Express app for Vercel Serverless Function & testing
 module.exports = app;
