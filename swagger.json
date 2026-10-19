@@ -1,0 +1,387 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Financial Transaction & Expense Tracker REST API",
+    "description": "Production-ready RESTful API built for YR NOVATECH Task 3 Backend Development evaluation. Features complete CRUD operations on financial transactions, SQLite persistent storage, express-validator input sanitization, and automated Swagger documentation.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Stephen Baraka Kakui",
+      "email": "stephenbaraka9283@gmail.com",
+      "url": "https://github.com/Obraims"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "Local Development Server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Health",
+      "description": "API status and health check endpoints"
+    },
+    {
+      "name": "Transactions",
+      "description": "Financial transaction management CRUD endpoints"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Health Check & Welcome Message",
+        "description": "Returns API health status, available routes, and link to interactive Swagger documentation.",
+        "responses": {
+          "200": {
+            "description": "API is operational",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transactions": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "Retrieve All Financial Transactions",
+        "description": "Fetches all stored financial transactions. Supports optional query filtering by type ('income' or 'expense') and category.",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Filter transactions by type ('income' or 'expense')",
+            "schema": {
+              "type": "string",
+              "enum": ["income", "expense"]
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Filter transactions by category (case-insensitive substring match)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transactions retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "count": { "type": "integer", "example": 3 },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Transaction" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalError"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Transactions"],
+        "summary": "Create a New Financial Transaction",
+        "description": "Creates a new transaction record with strict input validation for title, amount, type, and category.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransactionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Transaction created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "Transaction created successfully" },
+                    "data": { "$ref": "#/components/schemas/Transaction" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalError"
+          }
+        }
+      }
+    },
+    "/api/transactions/{id}": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "Retrieve Single Transaction by ID",
+        "description": "Fetches a specific financial transaction record by its primary key ID.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Primary key ID of the transaction",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/Transaction" }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalError"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Transactions"],
+        "summary": "Update Transaction by ID",
+        "description": "Updates an existing financial transaction by ID with full field validation.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Primary key ID of the transaction to update",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransactionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transaction updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "Transaction updated successfully" },
+                    "data": { "$ref": "#/components/schemas/Transaction" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalError"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Transactions"],
+        "summary": "Delete Transaction by ID",
+        "description": "Permanently deletes a financial transaction record from the SQLite database by ID.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Primary key ID of the transaction to delete",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "Transaction with ID 1 deleted successfully" },
+                    "deletedId": { "type": "integer", "example": 1 }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Transaction": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "title": { "type": "string", "example": "Freelance Full-Stack Development" },
+          "amount": { "type": "number", "format": "float", "example": 1250.0 },
+          "type": { "type": "string", "enum": ["income", "expense"], "example": "income" },
+          "category": { "type": "string", "example": "Software Consulting" },
+          "created_at": { "type": "string", "format": "date-time", "example": "2026-10-17 19:00:00" }
+        }
+      },
+      "TransactionInput": {
+        "type": "object",
+        "required": ["title", "amount", "type", "category"],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 150,
+            "example": "Quarterly Software License"
+          },
+          "amount": {
+            "type": "number",
+            "format": "float",
+            "minimum": 0.01,
+            "example": 89.99
+          },
+          "type": {
+            "type": "string",
+            "enum": ["income", "expense"],
+            "example": "expense"
+          },
+          "category": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "Subscriptions & Software"
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string", "example": "Welcome to the Financial Transaction & Expense Tracker REST API" },
+          "version": { "type": "string", "example": "1.0.0" },
+          "documentation": { "type": "string", "example": "/api-docs" },
+          "endpoints": { "type": "object" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "error": { "type": "string", "example": "Transaction with ID 999 not found" }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "message": { "type": "string", "example": "Validation failed" },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": { "type": "string", "example": "amount" },
+                "message": { "type": "string", "example": "Amount must be a positive number greater than 0" },
+                "value": { "example": -50 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "400BadRequest": {
+        "description": "Validation error or invalid request payload",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ValidationError"
+            }
+          }
+        }
+      },
+      "404NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "500InternalError": {
+        "description": "Internal server error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+}

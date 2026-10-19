@@ -1,0 +1,31 @@
+{
+  "name": "yr-novatech-rest-api",
+  "version": "1.0.0",
+  "description": "Financial Transaction & Expense Tracker RESTful API for YR NOVATECH Task 3",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node verify.js"
+  },
+  "keywords": [
+    "express",
+    "rest-api",
+    "sqlite",
+    "swagger",
+    "express-validator",
+    "fintech",
+    "expense-tracker",
+    "yr-novatech"
+  ],
+  "author": "Stephen Baraka Kakui",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-validator": "^7.2.1",
+    "sqlite3": "^5.1.7",
+    "swagger-ui-express": "^5.0.1"
+  }
+}
