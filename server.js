@@ -7,6 +7,7 @@ require('dotenv').config();
 
 const db = require('./database');
 const swaggerDocument = require('./swagger.json');
+const { renderDashboardHtml } = require('./dashboard');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -38,20 +39,107 @@ app.use(async (req, res, next) => {
 // Swagger UI CDN Configuration (ensures CSS/JS render flawlessly on serverless Vercel)
 const SWAGGER_UI_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0';
 
-app.use(
-  '/api-docs',
-  swaggerUi.serve,
-  swaggerUi.setup(swaggerDocument, {
-    customSiteTitle: 'YR NOVATECH REST API Documentation',
-    customCss: '.swagger-ui .topbar { display: none }',
-    customCssUrl: `${SWAGGER_UI_CDN}/swagger-ui.min.css`,
-    customJs: [
-      `${SWAGGER_UI_CDN}/swagger-ui-bundle.min.js`,
-      `${SWAGGER_UI_CDN}/swagger-ui-standalone-preset.min.js`
-    ],
-    swaggerOptions: { docExpansion: 'list' }
-  })
-);
+const renderSwaggerHtml = (spec) => `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YR NOVATECH REST API Documentation | Swagger UI</title>
+  <link rel="stylesheet" href="${SWAGGER_UI_CDN}/swagger-ui.min.css" />
+  <style>
+    html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
+    *, *:before, *:after { box-sizing: inherit; }
+    body { margin: 0; background: #fafafa; }
+    .topbar { display: none !important; }
+    .swagger-nav-header {
+      background: #070a12;
+      border-bottom: 1px solid #1e293b;
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .swagger-nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 15px;
+      text-decoration: none;
+    }
+    .swagger-nav-brand span.badge {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #10b981;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: monospace;
+    }
+    .swagger-nav-links {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .swagger-nav-links a {
+      color: #38bdf8;
+      font-size: 13px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.15s;
+    }
+    .swagger-nav-links a:hover {
+      color: #7dd3fc;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <nav class="swagger-nav-header">
+    <a href="/" class="swagger-nav-brand">
+      <span>YR NOVATECH</span>
+      <span class="badge">Task 3 REST API</span>
+    </a>
+    <div class="swagger-nav-links">
+      <a href="/">&larr; Back to Live Interactive Dashboard</a>
+      <a href="/api/health" target="_blank">Health Check JSON</a>
+      <a href="/api-docs/swagger.json" target="_blank">Raw OpenAPI JSON</a>
+    </div>
+  </nav>
+  <div id="swagger-ui"></div>
+  <script src="${SWAGGER_UI_CDN}/swagger-ui-bundle.js"></script>
+  <script src="${SWAGGER_UI_CDN}/swagger-ui-standalone-preset.js"></script>
+  <script>
+    window.onload = function() {
+      const ui = SwaggerUIBundle({
+        spec: ${JSON.stringify(spec)},
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIStandalonePreset
+        ],
+        layout: "BaseLayout",
+        docExpansion: "list"
+      });
+      window.ui = ui;
+    };
+  </script>
+</body>
+</html>`;
+
+// Serve raw OpenAPI JSON spec
+app.get('/api-docs/swagger.json', (req, res) => {
+  res.json(swaggerDocument);
+});
+
+// Serve Swagger UI documentation
+app.get(['/api-docs', '/api-docs/'], (req, res) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(renderSwaggerHtml(swaggerDocument));
+});
 
 // Validation Error Formatter Middleware
 const handleValidationErrors = (req, res, next) => {
@@ -70,28 +158,47 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
+// Standard Health Response Generator
+const getHealthData = () => ({
+  success: true,
+  message: 'Welcome to the Financial Transaction & Expense Tracker REST API',
+  version: '1.0.0',
+  platform: process.env.VERCEL ? 'Vercel Serverless' : 'Node.js Express',
+  documentation: '/api-docs',
+  timestamp: new Date().toISOString(),
+  endpoints: {
+    healthCheck: 'GET /',
+    healthCheckJson: 'GET /api/health',
+    swaggerDocs: 'GET /api-docs',
+    getAllTransactions: 'GET /api/transactions',
+    getTransactionsFiltered: 'GET /api/transactions?type={income|expense}&category={name}',
+    getTransactionById: 'GET /api/transactions/:id',
+    createTransaction: 'POST /api/transactions',
+    updateTransaction: 'PUT /api/transactions/:id',
+    deleteTransaction: 'DELETE /api/transactions/:id'
+  }
+});
+
 // ==========================================
-// 1. Health Check & Root Welcome Route
+// 1. Health Check & Root Dashboard Route
 // ==========================================
+// Dual-mode: Returns modern HTML interactive dashboard if Accept includes text/html,
+// otherwise returns JSON health check (for curl, automated test suites, etc.)
 app.get('/', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'Welcome to the Financial Transaction & Expense Tracker REST API',
-    version: '1.0.0',
-    platform: process.env.VERCEL ? 'Vercel Serverless' : 'Node.js Express',
-    documentation: '/api-docs',
-    timestamp: new Date().toISOString(),
-    endpoints: {
-      healthCheck: 'GET /',
-      swaggerDocs: 'GET /api-docs',
-      getAllTransactions: 'GET /api/transactions',
-      getTransactionsFiltered: 'GET /api/transactions?type={income|expense}&category={name}',
-      getTransactionById: 'GET /api/transactions/:id',
-      createTransaction: 'POST /api/transactions',
-      updateTransaction: 'PUT /api/transactions/:id',
-      deleteTransaction: 'DELETE /api/transactions/:id'
-    }
-  });
+  const healthData = getHealthData();
+  const acceptHeader = req.headers['accept'] || '';
+
+  if (acceptHeader.includes('text/html')) {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.send(renderDashboardHtml(healthData));
+  }
+
+  res.status(200).json(healthData);
+});
+
+// Dedicated Raw JSON Health Route
+app.get('/api/health', (req, res) => {
+  res.status(200).json(getHealthData());
 });
 
 // ==========================================

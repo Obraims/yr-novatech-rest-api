@@ -51,8 +51,9 @@ The API is fully documented via interactive Swagger UI at `http://localhost:5000
 
 | Method | Endpoint | Description | Request Body | Status Code |
 |--------|----------|-------------|--------------|-------------|
-| `GET` | `/` | Service health check, route catalog, Swagger link | None | `200 OK` |
-| `GET` | `/api-docs` | Interactive Swagger OpenAPI 3.0 documentation | None | `200 OK` |
+| `GET` | `/` | Interactive HTML Dashboard (Browser) or Health JSON (API/cURL) | None | `200 OK` |
+| `GET` | `/api/health` | Raw service health check JSON object | None | `200 OK` |
+| `GET` | `/api-docs` | Interactive Swagger OpenAPI 3.0 documentation (CDN-backed) | None | `200 OK` |
 | `GET` | `/api/transactions` | Retrieve all transactions (optional `?type=` & `?category=`) | None | `200 OK` |
 | `GET` | `/api/transactions/:id` | Retrieve single transaction by ID | None | `200 OK` / `404 Not Found` |
 | `POST` | `/api/transactions` | Create a new financial transaction | JSON Payload | `201 Created` / `400 Bad Request` |
@@ -199,12 +200,15 @@ yr-novatech-rest-api/
 ├── .env.example            # Environment configuration template
 ├── .gitignore              # Ignores node_modules, .env, and SQLite binaries
 ├── API_DOCUMENTATION.md    # Comprehensive endpoint documentation with cURL
+├── dashboard.js            # Interactive HTML Live Tester dashboard renderer
 ├── database.js             # SQLite connection, table DDL, and automatic seeder
 ├── database.sqlite         # SQLite database file (generated at runtime)
 ├── package.json            # Node.js project manifest & scripts
 ├── README.md               # Main project overview and evaluation guide
 ├── server.js               # Express application, routes, validation, and error handlers
-└── swagger.json            # OpenAPI 3.0 specification for Swagger UI
+├── swagger.json            # OpenAPI 3.0 specification for Swagger UI
+├── vercel.json             # Vercel serverless deployment routing config
+└── verify.js               # Automated integration test runner (10 verification checks)
 ```
 
 ---

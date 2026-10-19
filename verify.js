@@ -102,12 +102,28 @@ const server = app.listen(PORT, async () => {
     console.log('Errors caught:', invalidRes.body.errors?.length);
     if (invalidRes.status !== 400 || !invalidRes.body.errors) throw new Error('Validation error check failed');
 
-    console.log('\n--- Test 8: GET /api-docs (Swagger UI) ---');
-    const swaggerRes = await request('/api-docs/');
+    console.log('\n--- Test 8: GET /api-docs (Swagger UI CDN) ---');
+    const swaggerRes = await request('/api-docs');
     console.log('Status:', swaggerRes.status);
-    if (swaggerRes.status !== 200 && swaggerRes.status !== 301) throw new Error('Swagger check failed');
+    console.log('Contains CDN CSS:', typeof swaggerRes.body === 'string' && swaggerRes.body.includes('cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui.min.css'));
+    console.log('Contains CDN JS:', typeof swaggerRes.body === 'string' && swaggerRes.body.includes('cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-bundle.js'));
+    if (swaggerRes.status !== 200 || !swaggerRes.body.includes('swagger-ui-bundle.js')) throw new Error('Swagger UI CDN check failed');
 
-    console.log('\n🎉 ALL 8 TESTS PASSED SUCCESSFULLY! The REST API is 100% operational.\n');
+    console.log('\n--- Test 9: GET / with Accept: text/html (Interactive HTML Dashboard) ---');
+    const htmlRes = await request('/', { headers: { 'Accept': 'text/html' } });
+    console.log('Status:', htmlRes.status);
+    console.log('Content-Type:', htmlRes.headers['content-type']);
+    const isHtml = typeof htmlRes.body === 'string' && htmlRes.body.includes('Online &amp; Connected to SQLite') && htmlRes.body.includes('transactions');
+    console.log('Contains Dashboard Markers:', isHtml);
+    if (htmlRes.status !== 200 || !isHtml) throw new Error('HTML dashboard check failed');
+
+    console.log('\n--- Test 10: GET /api/health (Raw JSON Health Check) ---');
+    const healthApiRes = await request('/api/health');
+    console.log('Status:', healthApiRes.status);
+    console.log('Success:', healthApiRes.body.success, '| Platform:', healthApiRes.body.platform);
+    if (healthApiRes.status !== 200 || !healthApiRes.body.success) throw new Error('/api/health check failed');
+
+    console.log('\n🎉 ALL 10 TESTS PASSED SUCCESSFULLY! The REST API, HTML Dashboard & Swagger UI are 100% operational.\n');
   } catch (err) {
     console.error('❌ Test execution error:', err.message);
     process.exitCode = 1;
